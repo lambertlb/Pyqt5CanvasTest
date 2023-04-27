@@ -3,61 +3,40 @@ GPL 3 file header
 """
 import sys
 
-import requests
-from PyQt5 import QtCore
-from PyQt5.QtCore import QThreadPool, QRunnable
-from PyQt5.QtGui import QPixmap, QTransform, QImage
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtGui import QPixmap, QTransform
 from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsScene, QGraphicsView
 
-
-class WorkerSignals(QtCore.QObject):
-	"""
-	Small worker class so QRunnable can call signals
-	"""
-	signal = QtCore.pyqtSignal(QImage)
-
-
-class WorkerThread(QRunnable):
-	"""
-	Class to allow long taks to run in thread pool
-	"""
-	signaler = WorkerSignals()  # so we can call signals
-
-	def __init__(self, url, onLoad):
-		super().__init__()
-		self.url = url
-		self.signaler.signal.connect(onLoad)
-
-	@QtCore.pyqtSlot()
-	def run(self):
-		"""
-		Runs in backgroun thread
-		:return: None
-		"""
-		if str(self.url).startswith('http'):
-			reply = requests.get(self.url)
-			qimg = QImage()
-			qimg.loadFromData(reply.content)
-		else:
-			qimg = QImage(self.url)
-		self.signaler.signal.emit(qimg)
+from AsyncTasks import AsyncImage, AsynchReturn
 
 
 class CanvasTestView(QGraphicsView):
 	"""
 	Override QGraphicsView so we can get at mouse wheel to set scaling
 	"""
+
+	def __init__(self, scene, parent):
+		super(CanvasTestView, self).__init__(scene, parent)
+		self.zoom = 1
+
 	def wheelEvent(self, event):
 		delta = event.angleDelta().y() / 120
 		if delta > 0:
-			mainWindow.zoomIn()
+			self.zoom *= 1.05
 		elif delta < 0:
-			mainWindow.zoomOut()
+			self.zoom /= 1.05
+		self.transform()
+
+	def transform(self):
+		self.setTransform(QTransform().scale(self.zoom, self.zoom))
+
+	def zoomReset(self):
+		self.zoom = 1
+		self.transform()
 
 
 class MainWindow(QMainWindow):
 	def __init__(self):
-		self.zoom = None
 		self.imageWidth = None
 		self.imageHeight = None
 		self.screenWidth = None
@@ -65,13 +44,13 @@ class MainWindow(QMainWindow):
 		self.runOnce = False
 
 		super(MainWindow, self).__init__()
-		QThreadPool.globalInstance().setMaxThreadCount(100) # make sure we have a buch of threads
 		self.setWindowTitle('Test Canvas')
 		self.img = QPixmap()
 		self.scene = QGraphicsScene()
 		self.pixMapItem = self.scene.addPixmap(self.img)
 		self.view = CanvasTestView(self.scene, self)
 		self.view.setDragMode(QGraphicsView.ScrollHandDrag)
+		self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
 		self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.addImage()
@@ -101,7 +80,6 @@ class MainWindow(QMainWindow):
 		self.getScreenResolution()
 		self.imageWidth = self.img.width()
 		self.imageHeight = self.img.height()
-		self.zoom = 1
 		if self.imageWidth > self.screenWidth or self.imageHeight > self.screenHeight:
 			self.resize(self.screenWidth, self.screenHeight)
 			self.show()
@@ -111,6 +89,7 @@ class MainWindow(QMainWindow):
 			self.resize(self.imageWidth + 2, self.imageHeight + 2)
 			self.show()
 			self.resetScroll()
+		self.view.zoomReset()
 
 	def updateImage(self, newPixmap):
 		"""
@@ -121,7 +100,6 @@ class MainWindow(QMainWindow):
 		self.img = newPixmap
 		self.pixMapItem.setPixmap(self.img)
 		self.addImage()
-		pass
 
 	def keyPressEvent(self, event):
 		"""
@@ -130,7 +108,6 @@ class MainWindow(QMainWindow):
 		:return:
 		"""
 		self.loadAnImage()
-		pass
 
 	def loadAnImage(self):
 		"""
@@ -138,52 +115,42 @@ class MainWindow(QMainWindow):
 		:return: None
 		"""
 		if not self.runOnce:
-			url = 'http://static4.paizo.com/image/content/PathfinderTales/PZO8500-CrisisOfFaith-Corogan.jpg'
-			worker = WorkerThread(url, self.imageLoaded)
+			AsyncImage('http://static4.paizo.com/image/content/PathfinderTales/PZO8500-CrisisOfFaith-Corogan.jpg', self.imageLoaded, self.failedLoad)
 			self.runOnce = True
 		else:
-			url = 'image/level1.jpg'
-			worker = WorkerThread(url, self.imageLoaded)
+			AsyncImage('image/level1.jpg', self.imageLoaded2, self.failedLoad)
 			self.runOnce = False
-		QThreadPool.globalInstance().start(worker)
 
-	@QtCore.pyqtSlot(QImage)
-	def imageLoaded(self, image):
+	@QtCore.pyqtSlot(AsynchReturn)
+	def imageLoaded(self, asynchReturn):
 		"""
 		Callback from background task when image loaded
-		:param image: Image that was loaded
+		:param asynchReturn: Image that was loaded
 		:return: None
 		"""
-		self.updateImage(QPixmap.fromImage(image))
+		self.updateImage(QPixmap.fromImage(asynchReturn.getData()))
 
-	@QtCore.pyqtSlot(QImage)
-	def imageLoaded2(self, image):
+	@QtCore.pyqtSlot(AsynchReturn)
+	def imageLoaded2(self, asynchReturn):
 		"""
 		Callback from background task when image loaded
 		added second one to make sure they can be separated
-		:param image: Image that was loaded
+		:param asynchReturn: Image that was loaded
 		:return: None
 		"""
+		self.updateImage(QPixmap.fromImage(asynchReturn.getData()))
 
-		self.updateImage(QPixmap.fromImage(image))
+	@QtCore.pyqtSlot(AsynchReturn)
+	def failedLoad(self, asynchReturn):
+		"""
+		Image loading failed
+		:param asynchReturn: return data from task
+		:return: None
+		"""
+		pass
 
 	def mouseDoubleClickEvent(self, event):
-		self.zoomReset()
-
-	def zoomIn(self):
-		self.zoom *= 1.05
-		self.updateView()
-
-	def zoomOut(self):
-		self.zoom /= 1.05
-		self.updateView()
-
-	def zoomReset(self):
-		self.zoom = 1
-		self.updateView()
-
-	def updateView(self):
-		self.view.setTransform(QTransform().scale(self.zoom, self.zoom))
+		self.view.zoomReset()
 
 	def resetScroll(self):
 		self.view.verticalScrollBar().setValue(0)
