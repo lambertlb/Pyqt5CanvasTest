@@ -50,10 +50,11 @@ class AsynchBase(QRunnable):
 	"""
 	Class to allow long takes to run in thread pool
 	"""
-	signaler = AsyncSignal()  # so we can call signals
+	signaler = None  # so we can call signals
 
 	def __init__(self, onSuccess, onFailure):
 		super().__init__()
+		self.signaler = AsyncSignal()  # so we can call signals
 		self.signaler.success.connect(onSuccess)
 		self.signaler.failure.connect(onFailure)
 		self.returnData = AsynchReturn()

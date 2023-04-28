@@ -13,3 +13,5 @@ to zoom and pan around a mouse point
 
 Lesson three: I used qt builder to layout a window with ribbon bar, graphics area and a tab layout.
     Used a splitter to separate graphics from tabbed layout
+
+Lesson four: I got drag and drop working. If button is dragged within the scene then it is just moved. If a button is dropped from outside the scene then a new one is created.

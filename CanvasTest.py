@@ -10,6 +10,8 @@ from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphic
 
 from AsyncTasks import AsynchReturn, AsyncImage
 
+mainWindow = None
+
 
 class MyScene(QGraphicsScene):
 	"""
@@ -45,6 +47,7 @@ class MyScene(QGraphicsScene):
 		"""
 		pw = QGraphicsProxyWidget()
 		db = DragButton('push me')
+		db.clicked.connect(mainWindow.loadAnImage)
 		pw.setWidget(db)
 		db.setProxy(pw)
 		self.addItem(pw)
@@ -112,6 +115,10 @@ class CanvasTestView(QGraphicsView):
 		self.zoom = 1
 		self.transform()
 
+	def setZoom(self, newZoom):
+		self.zoom = newZoom
+		self.transform()
+
 
 class MainWindow(QMainWindow):
 	def __init__(self):
@@ -139,12 +146,15 @@ class MainWindow(QMainWindow):
 		self.ribbonBar.setObjectName("ribbonBar")
 		self.button3 = DragButton(self.windowFrame)
 		self.button3.setObjectName("button3")
+		self.button3.clicked.connect(self.loadAnImage)
 		self.ribbonBar.addWidget(self.button3)
 		self.button2 = DragButton(self.windowFrame)
 		self.button2.setObjectName("button2")
+		self.button2.clicked.connect(self.loadAnImage)
 		self.ribbonBar.addWidget(self.button2)
 		self.button1 = DragButton(self.windowFrame)
 		self.button1.setObjectName("button1")
+		self.button1.clicked.connect(self.loadAnImage)
 		self.ribbonBar.addWidget(self.button1)
 		self.gridLayout.addLayout(self.ribbonBar, 0, 0, 1, 1)
 		self.splitter = QtWidgets.QSplitter(self.windowFrame)
@@ -157,8 +167,8 @@ class MainWindow(QMainWindow):
 		self.view = CanvasTestView(self.scene, self.splitter)
 		self.view.setDragMode(QGraphicsView.ScrollHandDrag)
 		self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-		self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-		self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		# self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		# self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
 		self.assetHolder = QtWidgets.QTabWidget(self.splitter)
 		self.assetHolder.setObjectName("assetHolder")
@@ -179,8 +189,8 @@ class MainWindow(QMainWindow):
 		self.splitter.setSizes([600, 200])
 		self.localize()
 		self.loadAnImage()
-		self.addImage()
-
+		global mainWindow
+		mainWindow = self
 		self.scene.addButtonToScent(100, 100)
 
 	def localize(self):
@@ -192,10 +202,11 @@ class MainWindow(QMainWindow):
 		self.assetHolder.setTabText(self.assetHolder.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
 		self.assetHolder.setTabText(self.assetHolder.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
 
-	def addImage(self):
-		self.show()
-		self.resetScroll()
-		self.view.zoomReset()
+	def computeInitialZoom(self):
+		pw = self.pixelMap.width()
+		sz = self.splitter.sizes()[0]
+		newZoom = sz / pw
+		self.view.setZoom(newZoom)
 
 	def updateImage(self, newPixmap):
 		"""
@@ -205,7 +216,8 @@ class MainWindow(QMainWindow):
 		"""
 		self.pixelMap = newPixmap
 		self.pixMapItem.setPixmap(self.pixelMap)
-		self.addImage()
+		self.computeInitialZoom()
+		self.resetScroll()
 
 	def keyPressEvent(self, event):
 		"""
@@ -221,11 +233,10 @@ class MainWindow(QMainWindow):
 		:return: None
 		"""
 		if not self.runOnce:
-			AsyncImage('http://static4.paizo.com/image/content/PathfinderTales/PZO8500-CrisisOfFaith-Corogan.jpg',
-					self.imageLoaded, self.failedLoad)
+			AsyncImage('image/FallPanorama.jpg', self.imageLoaded, self.failedLoad)
 			self.runOnce = True
 		else:
-			AsyncImage('image/level1.jpg', self.imageLoaded2, self.failedLoad)
+			AsyncImage('image/level1.jpg', self.imageLoaded, self.failedLoad)
 			self.runOnce = False
 
 	@QtCore.pyqtSlot(AsynchReturn)
@@ -235,17 +246,8 @@ class MainWindow(QMainWindow):
 		:param asynchReturn: Image that was loaded
 		:return: None
 		"""
-		self.updateImage(QPixmap.fromImage(asynchReturn.getData()))
-
-	@QtCore.pyqtSlot(AsynchReturn)
-	def imageLoaded2(self, asynchReturn):
-		"""
-		Callback from background task when image loaded
-		added second one to make sure they can be separated
-		:param asynchReturn: Image that was loaded
-		:return: None
-		"""
-		self.updateImage(QPixmap.fromImage(asynchReturn.getData()))
+		image = asynchReturn.getData()
+		self.updateImage(QPixmap.fromImage(image))
 
 	@QtCore.pyqtSlot(AsynchReturn)
 	def failedLoad(self, asynchReturn):
@@ -257,16 +259,11 @@ class MainWindow(QMainWindow):
 		pass
 
 	def mouseDoubleClickEvent(self, event):
-		self.view.zoomReset()
+		self.computeInitialZoom()
 
 	def resetScroll(self):
 		self.view.verticalScrollBar().setValue(0)
 		self.view.horizontalScrollBar().setValue(0)
-
-	def getScreenResolution(self):
-		resolution = app.desktop().availableGeometry()
-		self.screenWidth = resolution.width()
-		self.screenHeight = resolution.height()
 
 
 if __name__ == "__main__":
