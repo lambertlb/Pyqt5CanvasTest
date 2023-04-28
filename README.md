@@ -10,3 +10,6 @@ Lesson one: i Figure out how to asynchronously load images from web or disk.
 
 Lesson two: I figured out how to zoom and pan an image using QGraphicsScene and QGraphicsView and how 
 to zoom and pan around a mouse point
+
+Lesson three: I used qt builder to layout a window with ribbon bar, graphics area and a tab layout.
+    Used a splitter to separate graphics from tabbed layout
