@@ -4,10 +4,87 @@ GPL 3 file header
 import sys
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QTransform
-from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget
+from PyQt5.QtCore import Qt, QMimeData
+from PyQt5.QtGui import QPixmap, QTransform, QDrag
+from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget, QPushButton
 
 from AsyncTasks import AsynchReturn, AsyncImage
+
+
+class MyScene(QGraphicsScene):
+	"""
+	Subclass QGraphicsScene to manage drag and drop
+	"""
+	def dragEnterEvent(self, e):
+		e.acceptProposedAction()
+
+	def dropEvent(self, e):
+		"""
+		Item was dropped here.
+		If is had a proxy it means it was already here so just move it.
+		If no proxy then create a new item
+		:param e: event
+		:return:None
+		"""
+		src = e.source()
+		if src.getProxy() is not None:
+			src.getProxy().setPos(e.scenePos())
+		else:
+			pos = e.scenePos()
+			self.addButtonToScent(pos.x(), pos.y())
+
+	def dragMoveEvent(self, e):
+		e.acceptProposedAction()
+
+	def addButtonToScent(self, x, y):
+		"""
+		add a button to scene
+		:param x:
+		:param y:
+		:return: None
+		"""
+		pw = QGraphicsProxyWidget()
+		db = DragButton('push me')
+		pw.setWidget(db)
+		db.setProxy(pw)
+		self.addItem(pw)
+		pw.setPos(x, y)
+
+
+class DragButton(QPushButton):
+	"""
+	Make a draggable button
+	"""
+	def __init__(self, *args):
+		super(DragButton, self).__init__(*args)
+		self.proxy = None
+
+	def mouseMoveEvent(self, e):
+		"""
+		Move moved one me so start dragging
+		:param e: event
+		:return: None
+		"""
+		if e.buttons() == Qt.LeftButton:
+			drag = QDrag(self)
+			mime = QMimeData()
+			drag.setMimeData(mime)
+			drag.setPixmap(self.grab())
+			drag.exec_(Qt.MoveAction)
+
+	def setProxy(self, proxy):
+		"""
+		Set scene proxy if in a scene
+		:param proxy:
+		:return:
+		"""
+		self.proxy = proxy
+
+	def getProxy(self):
+		"""
+		:return: proxy else None if not in scene
+		"""
+		return self.proxy
 
 
 class CanvasTestView(QGraphicsView):
@@ -18,6 +95,7 @@ class CanvasTestView(QGraphicsView):
 	def __init__(self, scene, parent):
 		super(CanvasTestView, self).__init__(scene, parent)
 		self.zoom = 1
+		# self.setAcceptDrops(True)
 
 	def wheelEvent(self, event):
 		delta = event.angleDelta().y() / 120
@@ -59,13 +137,13 @@ class MainWindow(QMainWindow):
 		self.gridLayout.setObjectName("gridLayout")
 		self.ribbonBar = QtWidgets.QHBoxLayout()
 		self.ribbonBar.setObjectName("ribbonBar")
-		self.button3 = QtWidgets.QPushButton(self.windowFrame)
+		self.button3 = DragButton(self.windowFrame)
 		self.button3.setObjectName("button3")
 		self.ribbonBar.addWidget(self.button3)
-		self.button2 = QtWidgets.QPushButton(self.windowFrame)
+		self.button2 = DragButton(self.windowFrame)
 		self.button2.setObjectName("button2")
 		self.ribbonBar.addWidget(self.button2)
-		self.button1 = QtWidgets.QPushButton(self.windowFrame)
+		self.button1 = DragButton(self.windowFrame)
 		self.button1.setObjectName("button1")
 		self.ribbonBar.addWidget(self.button1)
 		self.gridLayout.addLayout(self.ribbonBar, 0, 0, 1, 1)
@@ -74,7 +152,7 @@ class MainWindow(QMainWindow):
 		self.splitter.setObjectName("splitter")
 
 		self.pixelMap = QPixmap()
-		self.scene = QGraphicsScene()
+		self.scene = MyScene()
 		self.pixMapItem = self.scene.addPixmap(self.pixelMap)
 		self.view = CanvasTestView(self.scene, self.splitter)
 		self.view.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -98,16 +176,12 @@ class MainWindow(QMainWindow):
 		self.statusbar.setObjectName("statusbar")
 		self.setStatusBar(self.statusbar)
 
-		self.splitter.setSizes([600,200])
+		self.splitter.setSizes([600, 200])
 		self.localize()
 		self.loadAnImage()
 		self.addImage()
 
-		self.sceneButton = QtWidgets.QPushButton('Push Me')
-		self.buttonProxy = QGraphicsProxyWidget()
-		self.buttonProxy.setWidget(self.sceneButton)
-		self.scene.addItem(self.buttonProxy)
-		self.buttonProxy.setPos(100,100)
+		self.scene.addButtonToScent(100, 100)
 
 	def localize(self):
 		_translate = QtCore.QCoreApplication.translate
