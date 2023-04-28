@@ -5,7 +5,7 @@ import sys
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QTransform
-from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget
 
 from AsyncTasks import AsynchReturn, AsyncImage
 
@@ -102,6 +102,12 @@ class MainWindow(QMainWindow):
 		self.localize()
 		self.loadAnImage()
 		self.addImage()
+
+		self.sceneButton = QtWidgets.QPushButton('Push Me')
+		self.buttonProxy = QGraphicsProxyWidget()
+		self.buttonProxy.setWidget(self.sceneButton)
+		self.scene.addItem(self.buttonProxy)
+		self.buttonProxy.setPos(100,100)
 
 	def localize(self):
 		_translate = QtCore.QCoreApplication.translate
