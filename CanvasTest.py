@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
 		self.imageHeight = None
 		self.screenWidth = None
 		self.screenHeight = None
-		self.runOnce = False
+		self.runOnce = True
 
 		super(MainWindow, self).__init__()
 		self.setObjectName("MainWindow")
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
 		self.splitter.setOrientation(QtCore.Qt.Horizontal)
 		self.splitter.setObjectName("splitter")
 
-		self.pixelMap = QPixmap('image/level1.jpg')
+		self.pixelMap = QPixmap()
 		self.scene = QGraphicsScene()
 		self.pixMapItem = self.scene.addPixmap(self.pixelMap)
 		self.view = CanvasTestView(self.scene, self.splitter)
@@ -98,7 +98,9 @@ class MainWindow(QMainWindow):
 		self.statusbar.setObjectName("statusbar")
 		self.setStatusBar(self.statusbar)
 
+		self.splitter.setSizes([600,200])
 		self.localize()
+		self.loadAnImage()
 		self.addImage()
 
 	def localize(self):
