@@ -2,9 +2,9 @@
 GPL 3 file header
 """
 import requests
-from PyQt5 import QtCore
-from PyQt5.QtCore import QRunnable, QThreadPool, QObject
-from PyQt5.QtGui import QImage
+from PySide6 import QtCore
+from PySide6.QtCore import QRunnable, QThreadPool, QObject
+from PySide6.QtGui import QImage
 
 
 class AsynchReturn:
@@ -38,8 +38,8 @@ class AsyncSignal(QObject):
 	"""
 	Small worker class so QRunnable can call signals
 	"""
-	success = QtCore.pyqtSignal(AsynchReturn)
-	failure = QtCore.pyqtSignal(AsynchReturn)
+	success = QtCore.Signal(AsynchReturn)
+	failure = QtCore.Signal(AsynchReturn)
 
 
 # global reference to thread pool
@@ -64,7 +64,7 @@ class AsynchBase(QRunnable):
 			asyncPool.setMaxThreadCount(30)
 		asyncPool.start(self)
 
-	@QtCore.pyqtSlot()
+	@QtCore.Slot()
 	def run(self):
 		"""
 		run the task and handle exception

@@ -3,10 +3,10 @@ GPL 3 file header
 """
 import sys
 
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QMimeData
-from PyQt5.QtGui import QPixmap, QTransform, QDrag
-from PyQt5.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget, QPushButton
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Qt, QMimeData
+from PySide6.QtGui import QPixmap, QTransform, QDrag
+from PySide6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget, QPushButton
 
 from AsyncTasks import AsynchReturn, AsyncImage
 
@@ -205,6 +205,11 @@ class MainWindow(QMainWindow):
 	def computeInitialZoom(self):
 		pw = self.pixelMap.width()
 		sz = self.splitter.sizes()[0]
+		vw = self.view.width()
+		sw = self.scene.width()
+		sh = self.scene.height()
+		print (f'pw {pw} vm {vw} sw {sw} sh {sh}')
+
 		newZoom = sz / pw
 		self.view.setZoom(newZoom)
 
@@ -239,7 +244,7 @@ class MainWindow(QMainWindow):
 			AsyncImage('image/level1.jpg', self.imageLoaded, self.failedLoad)
 			self.runOnce = False
 
-	@QtCore.pyqtSlot(AsynchReturn)
+	@QtCore.Slot(AsynchReturn)
 	def imageLoaded(self, asynchReturn):
 		"""
 		Callback from background task when image loaded
@@ -249,7 +254,7 @@ class MainWindow(QMainWindow):
 		image = asynchReturn.getData()
 		self.updateImage(QPixmap.fromImage(image))
 
-	@QtCore.pyqtSlot(AsynchReturn)
+	@QtCore.Slot(AsynchReturn)
 	def failedLoad(self, asynchReturn):
 		"""
 		Image loading failed
@@ -270,4 +275,4 @@ if __name__ == "__main__":
 	app = QtWidgets.QApplication(sys.argv)
 	mainWindow = MainWindow()
 	mainWindow.show()
-	sys.exit(app.exec_())
+	sys.exit(app.exec())
