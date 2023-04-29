@@ -52,6 +52,7 @@ class MyScene(QGraphicsScene):
 		db.setProxy(pw)
 		self.addItem(pw)
 		pw.setPos(x, y)
+		pw.setZValue(100)
 
 
 class DragButton(QPushButton):
@@ -161,14 +162,14 @@ class MainWindow(QMainWindow):
 		self.splitter.setOrientation(QtCore.Qt.Horizontal)
 		self.splitter.setObjectName("splitter")
 
-		self.pixelMap = QPixmap()
 		self.scene = MyScene()
+		self.pixelMap = QPixmap()
 		self.pixMapItem = self.scene.addPixmap(self.pixelMap)
 		self.view = CanvasTestView(self.scene, self.splitter)
 		self.view.setDragMode(QGraphicsView.ScrollHandDrag)
 		self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-		# self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-		# self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
 		self.assetHolder = QtWidgets.QTabWidget(self.splitter)
 		self.assetHolder.setObjectName("assetHolder")
@@ -205,10 +206,6 @@ class MainWindow(QMainWindow):
 	def computeInitialZoom(self):
 		pw = self.pixelMap.width()
 		sz = self.splitter.sizes()[0]
-		vw = self.view.width()
-		sw = self.scene.width()
-		sh = self.scene.height()
-		print (f'pw {pw} vm {vw} sw {sw} sh {sh}')
 
 		newZoom = sz / pw
 		self.view.setZoom(newZoom)
@@ -219,10 +216,13 @@ class MainWindow(QMainWindow):
 		:param newPixmap:
 		:return: None
 		"""
+		self.scene.removeItem(self.pixMapItem)
 		self.pixelMap = newPixmap
-		self.pixMapItem.setPixmap(self.pixelMap)
+		self.pixMapItem = self.scene.addPixmap(self.pixelMap)
 		self.computeInitialZoom()
 		self.resetScroll()
+		self.view.setSceneRect(0, 0, self.pixelMap.width(), self.pixelMap.height())
+		self.view.fitInView(0, 0, self.pixelMap.width(), self.pixelMap.height(), QtCore.Qt.KeepAspectRatio)
 
 	def keyPressEvent(self, event):
 		"""
