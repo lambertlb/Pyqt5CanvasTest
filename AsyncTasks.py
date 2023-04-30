@@ -2,9 +2,9 @@
 GPL 3 file header
 """
 import requests
-from PySide6 import QtCore
-from PySide6.QtCore import QRunnable, QThreadPool, QObject
-from PySide6.QtGui import QImage
+from PySide2 import QtCore
+from PySide2.QtCore import QRunnable, QThreadPool, QObject
+from PySide2.QtGui import QImage
 
 
 class AsynchReturn:

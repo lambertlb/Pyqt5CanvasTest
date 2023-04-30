@@ -3,10 +3,10 @@ GPL 3 file header
 """
 import sys
 
-from PySide6 import QtCore, QtWidgets
-from PySide6.QtCore import Qt, QMimeData
-from PySide6.QtGui import QPixmap, QTransform, QDrag
-from PySide6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget, QPushButton
+from PySide2 import QtCore, QtWidgets
+from PySide2.QtCore import Qt, QMimeData
+from PySide2.QtGui import QPixmap, QTransform, QDrag
+from PySide2.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget, QPushButton
 
 from AsyncTasks import AsynchReturn, AsyncImage
 
@@ -196,12 +196,12 @@ class MainWindow(QMainWindow):
 
 	def localize(self):
 		_translate = QtCore.QCoreApplication.translate
-		self.setWindowTitle(_translate("MainWindow", "MainWindow"))
-		self.button3.setText(_translate("MainWindow", "PushButton"))
-		self.button2.setText(_translate("MainWindow", "PushButton"))
-		self.button1.setText(_translate("MainWindow", "PushButton"))
-		self.assetHolder.setTabText(self.assetHolder.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
-		self.assetHolder.setTabText(self.assetHolder.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
+		self.setWindowTitle("MainWindow")
+		self.button3.setText("PushButton")
+		self.button2.setText("PushButton")
+		self.button1.setText("PushButton")
+		self.assetHolder.setTabText(self.assetHolder.indexOf(self.tab), "Tab 1")
+		self.assetHolder.setTabText(self.assetHolder.indexOf(self.tab_2), "Tab 2")
 
 	def computeInitialZoom(self):
 		pw = self.pixelMap.width()
@@ -275,4 +275,4 @@ if __name__ == "__main__":
 	app = QtWidgets.QApplication(sys.argv)
 	mainWindow = MainWindow()
 	mainWindow.show()
-	sys.exit(app.exec())
+	sys.exit(app.exec_())
